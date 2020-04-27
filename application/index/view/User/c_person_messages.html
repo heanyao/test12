@@ -36,7 +36,7 @@
 						</span>
 					</div>
 					<div class="c_message_box c_row">
-						<div class="c_msg_items c_row" @click="to_msg(item.from_uid,item.head_img_url,item.name)" v-cloak v-for="(item,idx) in show_list" :key="idx">
+						<div :id="'message_'+item.from_uid" class="c_msg_items c_row" @click="to_msg(item.from_uid,item.head_img_url,item.name)" v-cloak v-for="(item,idx) in show_list" :key="item.from_uid">
 							<div class="c_msg_tx">
 								<img :src="api_address+item.head_img_url">
 							</div>
@@ -55,9 +55,14 @@
 
 					</div>
 					
-<!-- 					<div id="">
-						分页
-					</div> -->
+ 					<div id="">
+						<el-pagination
+								layout="prev, pager, next"
+								@current-change="handleCurrentChange"
+								:total= msg_count
+								:page-size= page_size>
+						</el-pagination>
+					</div>
 				</div>
 			</div>
 	{include file="public/footer"}		
@@ -128,6 +133,9 @@
 								title: '黑名单管理'
 							}
 						],
+						msg_count:0,
+						page_size:20,//修改每页显示条数
+						page:1,
 						msg_list: [],
 						show_list: [],
 						my_id:1,
@@ -149,7 +157,11 @@
 					del_msg: function(id, events) {
 						var vm =this;
 						events.cancelBubble = true;
-						
+
+						//删除localstorage中的聊天记录
+						// localStorage.removeItem('dialoglist_'+id);
+						// console.log('id', id);
+						$("#message_"+id).remove()
 						$.ajax({
 							url: api_address + '/api/messages/delmsg?from_uid=' + id,
 							type: 'get',
@@ -157,12 +169,40 @@
 							success: function(data) {
 								Dialog.warn("提示", data.msg);
 								$('.mini-dialog-footer').css('height', '64px');
+								vm.page = 1;
+								vm.get_msg_count();
 								vm.get_msg_list();
+								setTimeout(function(){
+								window.location.reload();
+							}, 2000);
 							},
 							error: function(e) {
 								console.log(e);
 							}
 						});
+					},
+
+					handleCurrentChange(val) {
+						this.page = val;
+						this.get_msg_list();
+						// var vm = this;
+						// $.ajax({
+						// 	url: api_address + '/api/messages/mymsglist/?page='+val+'&page_size='+vm.page_size,
+						// 	type: 'get',
+						// 	dataType: 'json',
+						// 	success: function(data) {
+						// 		console.log(data);
+						// 		if (data.code === 200) {
+						// 			vm.msg_list = data.data;
+						// 			vm.$forceUpdate();
+						// 		}
+						// 		vm.show_list = vm.msg_list;
+						//
+						// 	},
+						// 	error: function(e) {
+						// 		console.log(e)
+						// 	}
+						// });
 					},
 					sx_checked: function(e) {
 						var el = event.currentTarget;
@@ -178,10 +218,29 @@
 						}
 
 					},
+					get_msg_count:function(){
+						var vm = this;
+						$.ajax({
+							url: api_address + '/api/messages/mymsgcount',
+							type: 'get',
+							dataType: 'json',
+							success: function(data) {
+								console.log(data);
+								if (data.code === 200) {
+									vm.msg_count = data.data.total;
+									vm.$forceUpdate();
+								}
+								// vm.msg_count = vm.msg_count;
+							},
+							error: function(e) {
+								console.log(e)
+							}
+						});
+					},
 					get_msg_list:function(){
 						var vm = this;
 						$.ajax({
-							url: api_address + '/api/messages/mymsglist',
+							url: api_address + '/api/messages/mymsglist/?page='+vm.page+'&page_size='+vm.page_size,
 							type: 'get',
 							dataType: 'json',
 							success: function(data) {
@@ -191,7 +250,7 @@
 									vm.$forceUpdate();
 								}
 								vm.show_list = vm.msg_list;
-								
+								console.log(vm.show_list)
 							},
 							error: function(e) {
 								console.log(e)
@@ -207,6 +266,7 @@
 					}
 				},
 				mounted: function() {
+					this.get_msg_count();
 					this.get_msg_list();
 				}
 			});

@@ -6,6 +6,7 @@
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Person</title>
+    <script src="__INDEX__/style/jquery-1.8.3.min.js"></script>
     <script src="__INDEX__/style/vue.min.js"></script>
     <link rel="stylesheet" href="__INDEX__/style/element-ui.css">
     <script src="__INDEX__/style/element-ui.js"></script>
@@ -108,7 +109,7 @@
             up_file: function () {
                 let self = this;
                 let file = $("#tx_file").val();
-                let apiAddress = getApi();
+                let apiAddress = __HOMEURL__;
                 let user_id= self.user_id;
                 let time = new Date().getTime();
                 let fileimg = $("#tx_file").prop('files')[0];

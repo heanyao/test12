@@ -41,7 +41,7 @@ class Messages extends Model
         return $ret;
     }
 
-    public function get_msg_list($to_uid){
+    public function get_msg_list($to_uid, $page=1, $pageSize=20){
 
             $model=model('messages');
          // $map['m.to_uid']  = $to_uid;
@@ -71,8 +71,8 @@ class Messages extends Model
         // $offset = $pageNumber_one * $limit;//查询偏移值
 
 
-
-        $sql= " SELECT m.status,m.id,m.from_uid,m.content,m.addtime,u.name,u.head_img_url FROM `bk_messages` `m` INNER JOIN `bk_user` `u` ON `u`.`id`=`m`.`from_uid` where m.to_uid = '".$to_uid."' AND m.id in(select max(id) from bk_messages group by from_uid) order by m.status desc ;  " ;
+        $offset = ($page-1)*$pageSize;
+        $sql= " SELECT m.status,m.id,m.from_uid,m.content,m.addtime,u.name,u.head_img_url FROM `bk_messages` `m` INNER JOIN `bk_user` `u` ON `u`.`id`=`m`.`from_uid` where m.to_uid = '".$to_uid."' AND m.id in(select max(id) from bk_messages group by from_uid) and from_show=0 and to_show=0 order by m.id desc   limit {$offset}, {$pageSize};" ;
 
         $ret = $model->query($sql);
         // $count =count($ret);
@@ -85,34 +85,47 @@ class Messages extends Model
     return $ret;
     }
 
+    /*
+     * @30324143
+     */
+    public function get_msg_count($to_uid){
+        $model=model('messages');
+        $sql= " SELECT count(*) as total FROM `bk_messages` `m` INNER JOIN `bk_user` `u` ON `u`.`id`=`m`.`from_uid` where m.to_uid = '".$to_uid."' AND m.id in(select max(id) from bk_messages group by from_uid) and from_show=0 and to_show=0 order by m.status desc ;  " ;
+
+        $ret = $model->query($sql);
+        return empty($ret) ? 0 : $ret[0];
+    }
 
    //消息删除
     public function del_msg($from_uid,$to_uid){
          // $map['a.pid']  = $row["id"];
          // $map['a.is_delete']  = 0;
-        $ret_p1=db('messages')->where(['from_uid'=>$from_uid,'to_uid'=>$to_uid,'type'=>1])->column('content');
-        $ret_p2=db('messages')->where(['from_uid'=>$to_uid,'to_uid'=>$from_uid,'type'=>1])->column('content');
-         // dump($ret_pic);die;
-         if($ret_p1){
-                 foreach ($ret_p1 as $v) {
-              $urlpath=$_SERVER['DOCUMENT_ROOT'].$v;
-                if(file_exists($urlpath)){
-                  @unlink($urlpath);
-                }                 
-              }
-         }
+//        $ret_p1=db('messages')->where(['from_uid'=>$from_uid,'to_uid'=>$to_uid,'type'=>1])->column('content');
+//        $ret_p2=db('messages')->where(['from_uid'=>$to_uid,'to_uid'=>$from_uid,'type'=>1])->column('content');
+//         // dump($ret_pic);die;
+//         if($ret_p1){
+//                 foreach ($ret_p1 as $v) {
+//              $urlpath=$_SERVER['DOCUMENT_ROOT'].$v;
+//                if(file_exists($urlpath)){
+//                  @unlink($urlpath);
+//                }
+//              }
+//         }
+//
+//         if($ret_p2){
+//                 foreach ($ret_p2 as $v) {
+//              $urlpath=$_SERVER['DOCUMENT_ROOT'].$v;
+//                if(file_exists($urlpath)){
+//                  @unlink($urlpath);
+//                }
+//              }
+//         }
+//
+//         $ret=db('messages')->where(['from_uid'=>$from_uid,'to_uid'=>$to_uid])->delete();
+//         $ret=db('messages')->where(['from_uid'=>$to_uid,'to_uid'=>$from_uid])->delete();
 
-         if($ret_p2){
-                 foreach ($ret_p2 as $v) {
-              $urlpath=$_SERVER['DOCUMENT_ROOT'].$v;
-                if(file_exists($urlpath)){
-                  @unlink($urlpath);
-                }                 
-              }
-         }
-         
-         $ret=db('messages')->where(['from_uid'=>$from_uid,'to_uid'=>$to_uid])->delete();
-         $ret=db('messages')->where(['from_uid'=>$to_uid,'to_uid'=>$from_uid])->delete();
+         $ret=db('messages')->where(['from_uid'=>$from_uid,'to_uid'=>$to_uid])->update(['from_show'=>1, 'to_show'=>1]);
+//         $ret=db('messages')->where(['from_uid'=>$to_uid,'to_uid'=>$from_uid])->update(['from_show'=>1]);
         // dump($ret);die;
         return 1;
     }
